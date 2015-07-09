@@ -17,6 +17,7 @@ class PopItToNeo(object):
         self.organization_field = "organizations"
         self.post_field = "posts"
         self.graph = Graph()
+        
         # Because I am still not familiar to query with cypher
         # So lets cache here. Hopefully the memory usage don't kill me
         self.organization_processed = {}
@@ -44,9 +45,15 @@ class PopItToNeo(object):
                 logging.warning("Role: %s" % role)
                 if entry.get("post_id"):
                     post = self.fetch_post(entry["post_id"])
+                    if self.graph.match_one(person, role, post):
+                        logging.warning("Already exist, skipping")
+                        continue
                     relationship = Relationship(person, role, post)
                 else:
                     organization = self.fetch_organization(entry["organization_id"])
+                    if self.graph.match_one(person, role, organization):
+                        logging.warning("Already exist, skipping")
+                        continue
                     relationship = Relationship(person, role, organization)
                 self.graph.create(relationship)
             if data.get("next_url"):
@@ -58,6 +65,12 @@ class PopItToNeo(object):
         if person_id in self.person_processed:
             logging.warning("Person %s fetch from cache" % person_id)
             return self.person_processed[person_id]
+
+        node = self.graph.find_one("Persons", "popit_id", person_id)
+        if node:
+            logging.warning("Already exist, skipping")
+            self.person_processed[person_id] = node
+            return node
 
         person_url = "%s/%s/%s" % (self.endpoint, self.person_field, person_id)
         data = self.fetch_entity(person_url)
@@ -77,7 +90,13 @@ class PopItToNeo(object):
     def fetch_organization(self, organization_id):
         if organization_id in self.organization_processed:
             logging.warning("Organization %s fetch from cache" % organization_id)
-            return self.person_processed[organization_id]
+            return self.organization_processed[organization_id]
+
+        node = self.graph.find_one("Organization", "popit_id", organization_id)
+        if node:
+            logging.warning("Already exist, skipping")
+            self.organization_processed[organization_id] = node
+            return node
 
         organization_url = "%s/%s/%s" % (self.endpoint, self.organization_field, organization_id)
         data = self.fetch_entity(organization_url)
@@ -103,6 +122,12 @@ class PopItToNeo(object):
         if post_id in self.post_processed:
             logging.warning("Post %s fetch from cache" % post_id)
             return self.post_processed[post_id]
+
+        node = self.graph.find_one("Posts", "popit_id", post_id)
+        if node:
+            logging.warning("Already exist, skipping")
+            self.post_processed[post_id] = node
+            return node
 
         post_url = "%s/% s/%s" % (self.endpoint, self.post_field, post_id)
         data = self.fetch_entity(post_url)
