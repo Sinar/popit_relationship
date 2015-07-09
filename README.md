@@ -7,7 +7,7 @@ There is 2 version of the script, one to generate data in networkx, the other fe
 
 There is no parameter needed to run `popit_to_neo4j.py`, just run the script
 ```Shell
-$ python networkx_to_neo4j.py
+$ python popit_to_neo4j.py
 ```
 
 For `popit_to_networkx.py`, i did not make a complete solution
