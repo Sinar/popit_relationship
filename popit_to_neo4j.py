@@ -17,7 +17,7 @@ class PopItToNeo(object):
         self.organization_field = "organizations"
         self.post_field = "posts"
         self.graph = Graph()
-        
+
         # Because I am still not familiar to query with cypher
         # So lets cache here. Hopefully the memory usage don't kill me
         self.organization_processed = {}
@@ -84,6 +84,7 @@ class PopItToNeo(object):
             name = entity["name"]
         logging.warning("Name: %s" % name)
         node = Node("Persons", name=name, popit_id=entity["id"])
+        self.graph.create(node)
         self.person_processed[entity["id"]] = node
         return node
 
@@ -115,7 +116,8 @@ class PopItToNeo(object):
             node = Node("Organization", name=name, popit_id=entity["id"], classification=entity["classification"])
         else:
             node = Node("Organization", name=name, popit_id=entity["id"])
-        self.person_processed[entity["id"]] = node
+        self.graph.create(node)
+        self.organization_processed[entity["id"]] = node
         return node
 
     def fetch_post(self, post_id):
@@ -136,18 +138,82 @@ class PopItToNeo(object):
         entity = data["result"]
         # Fetch organization node, because post is link to organization
         # What is the implication of post without organization?
-        if entity.get("organization_id"):
-            organization = self.fetch_organization(entity["organization_id"])
-        else:
+        try:
+            if entity.get("organization_id"):
+                organization = self.fetch_organization(entity["organization_id"])
+            else:
+                organization = None
+        except Exception as e:
+            logging.warning(e.message)
             organization = None
         logging.warning("Label: %s" % entity["label"])
         node = Node("Posts", name=entity["label"], popit_id=entity["id"])
+        self.graph.create(node)
         self.post_processed[entity["id"]] = node
         if organization:
             relation = Relationship(node, "of", organization)
             self.graph.create(relation)
 
         return node
+
+    def process_parent_company(self):
+        organizations_url = "%s/%s" % (self.endpoint, self.organization_field)
+
+
+        while True:
+            data = self.fetch_entity(organizations_url)
+            entries = data["result"]
+            for entry in entries:
+                if not entry.get("parent_id"):
+                    logging.warning("No parent id, moving on")
+                    continue
+                else:
+                    logging.warning(entry.get("parent_id"))
+
+                test_url = "%s/%s/%s" % (self.endpoint, self.organization_field, entry["parent_id"])
+                # TODO: How to refactor this
+                test_result = requests.get(test_url)
+
+                if test_result.status_code != 200:
+                    logging.warning(test_result.content)
+                    continue
+
+                # TODO: Dafuq this is not DRY.
+
+                parent_node = self.fetch_organization(entry["parent_id"])
+                child_node = self.fetch_organization(entry["id"])
+                parent_relationship = Relationship(parent_node, "parent_of", child_node)
+                if self.graph.match_one(parent_node, "parent_of", child_node):
+                    logging.warning("relation exist %s %s" % (entry["id"], entry["parent_id"]))
+                    continue
+                self.graph.create(parent_relationship)
+                if self.graph.match_one(child_node, "child_of", parent_node):
+                    logging.warning("relation exist %s %s" % (entry["id"], entry["parent_id"]))
+                    continue
+                child_relationship = Relationship(child_node, "child_of", parent_node)
+                self.graph.create(child_relationship)
+
+            if "next_url" in data:
+                organizations_url = data["next_url"]
+                logging.warning(organizations_url)
+            else:
+                break
+
+    def process_posts(self):
+        post_url = "%s/%s" % (self.endpoint, self.post_field)
+        while True:
+            data = self.fetch_entity(post_url)
+            entries = data["result"]
+            for entry in entries:
+                node = self.fetch_post(entry["id"])
+                self.graph.create(node)
+                # Since creating organization relationship is already part of getting post
+                # ourjob is done here
+            if "next_url" in data:
+                post_url = data["next_url"]
+                logging.warning(post_url)
+            else:
+                break
 
     def fetch_entity(self, url):
         r = requests.get(url)
@@ -160,3 +226,5 @@ class PopItToNeo(object):
 if __name__ == "__main__":
     loader = PopItToNeo()
     loader.process_membership()
+    loader.process_parent_company()
+    loader.process_posts()
