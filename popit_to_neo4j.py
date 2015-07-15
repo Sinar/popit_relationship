@@ -5,10 +5,12 @@ from py2neo import Relationship
 import requests
 import time
 import logging
+import yaml
 
 
 class PopItToNeo(object):
     def __init__(self):
+        config = yaml.load(open("config.yaml"))
         self.endpoint = "https://sinar-malaysia.popit.mysociety.org/api/v0.1"
 
         # you know so that you can override this. why? I am not sure
@@ -16,7 +18,7 @@ class PopItToNeo(object):
         self.person_field = "persons"
         self.organization_field = "organizations"
         self.post_field = "posts"
-        self.graph = Graph()
+        self.graph = Graph(config["graph_db"])
 
         # Because I am still not familiar to query with cypher
         # So lets cache here. Hopefully the memory usage don't kill me
@@ -49,13 +51,14 @@ class PopItToNeo(object):
                         logging.warning("Already exist, skipping")
                         continue
                     relationship = Relationship(person, role, post)
-                else:
+                    self.graph.create(relationship)
+                if entry.get("organization_id"):
                     organization = self.fetch_organization(entry["organization_id"])
                     if self.graph.match_one(person, role, organization):
                         logging.warning("Already exist, skipping")
                         continue
                     relationship = Relationship(person, role, organization)
-                self.graph.create(relationship)
+                    self.graph.create(relationship)
             if data.get("next_url"):
                 membership_url = data.get("next_url")
             else:
