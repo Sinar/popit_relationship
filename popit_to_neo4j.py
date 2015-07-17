@@ -36,29 +36,37 @@ class PopItToNeo(object):
 
             entries = data["result"]
             for entry in entries:
+
                 # a membership have 3 important field, person_id, organization_id, posts_id
                 if not (entry.get("person_id") and entry.get("organization_id")):
                     continue
 
                 person = self.fetch_person(entry["person_id"])
+                if not person:
+                    continue
                 role = entry.get("role","member")
                 if not role:
                     role = "member"
                 logging.warning("Role: %s" % role)
                 if entry.get("post_id"):
                     post = self.fetch_post(entry["post_id"])
+                    if not post:
+                        continue
                     if self.graph.match_one(person, role, post):
                         logging.warning("Already exist, skipping")
-                        continue
-                    relationship = Relationship(person, role, post)
-                    self.graph.create(relationship)
+                    else:
+                        relationship = Relationship(person, role, post)
+                        self.graph.create(relationship)
                 if entry.get("organization_id"):
                     organization = self.fetch_organization(entry["organization_id"])
+                    if not organization:
+                        continue
                     if self.graph.match_one(person, role, organization):
                         logging.warning("Already exist, skipping")
-                        continue
-                    relationship = Relationship(person, role, organization)
-                    self.graph.create(relationship)
+                    else:
+                        relationship = Relationship(person, role, organization)
+                        self.graph.create(relationship)
+
             if data.get("next_url"):
                 membership_url = data.get("next_url")
             else:
@@ -77,6 +85,10 @@ class PopItToNeo(object):
 
         person_url = "%s/%s/%s" % (self.endpoint, self.person_field, person_id)
         data = self.fetch_entity(person_url)
+        if not data:
+            # Don't assume that this id won't be created the next time
+            logging.warning("person not exist %s" % person_id)
+            return None
         logging.warning("Fetching person")
 
         entity = data["result"]
@@ -104,6 +116,9 @@ class PopItToNeo(object):
 
         organization_url = "%s/%s/%s" % (self.endpoint, self.organization_field, organization_id)
         data = self.fetch_entity(organization_url)
+        if not data:
+            logging.warning("Organization don't exist %s" % organization_id)
+            return None
         logging.warning("Fetch orgnanization")
 
         entity = data["result"]
@@ -136,6 +151,9 @@ class PopItToNeo(object):
 
         post_url = "%s/% s/%s" % (self.endpoint, self.post_field, post_id)
         data = self.fetch_entity(post_url)
+        if not data:
+            logging.warning("Post don't exist %s" % post_id)
+            return None
         logging.warning("Fetch post")
 
         entity = data["result"]
@@ -165,6 +183,7 @@ class PopItToNeo(object):
 
         while True:
             data = self.fetch_entity(organizations_url)
+
             entries = data["result"]
             for entry in entries:
                 if not entry.get("parent_id"):
@@ -173,17 +192,10 @@ class PopItToNeo(object):
                 else:
                     logging.warning(entry.get("parent_id"))
 
-                test_url = "%s/%s/%s" % (self.endpoint, self.organization_field, entry["parent_id"])
-                # TODO: How to refactor this
-                test_result = requests.get(test_url)
-
-                if test_result.status_code != 200:
-                    logging.warning(test_result.content)
-                    continue
-
                 # TODO: Dafuq this is not DRY.
-
                 parent_node = self.fetch_organization(entry["parent_id"])
+                if not parent_node:
+                    continue
                 child_node = self.fetch_organization(entry["id"])
                 parent_relationship = Relationship(parent_node, "parent_of", child_node)
                 if self.graph.match_one(parent_node, "parent_of", child_node):
@@ -222,7 +234,8 @@ class PopItToNeo(object):
         r = requests.get(url)
         time.sleep(0.1)
         if r.status_code != 200:
-            raise Exception(r.content)
+            # Just to make output consistent, excception did not kill the script anyway
+            return {}
         return r.json()
 
 
