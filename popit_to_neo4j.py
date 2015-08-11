@@ -4,9 +4,14 @@ from py2neo import Node
 from py2neo import Relationship
 import requests
 import time
+import datetime
+from dateutil.parser import parse
 import logging
 import yaml
+import re
 
+# Because a bulk of history started in 1945 after WW2. It's complicated
+DEFAULT_DATE = datetime.date(1945,1,1)
 
 class PopItToNeo(object):
     def __init__(self):
@@ -19,6 +24,8 @@ class PopItToNeo(object):
         self.organization_field = "organizations"
         self.post_field = "posts"
         self.graph = Graph(config["graph_db"])
+        if config["refresh"] == True:
+            self.graph.delete_all()
 
         # Because I am still not familiar to query with cypher
         # So lets cache here. Hopefully the memory usage don't kill me
@@ -48,23 +55,46 @@ class PopItToNeo(object):
                 if not role:
                     role = "member"
                 logging.warning("Role: %s" % role)
+
+                params = []
+
+                # This happens only once anyway
+                kwparams = {}
+                kwparams["popit_id"] = entry["id"]
+                start_date = get_timestamp(entry.get("start_date"))
+                if start_date:
+                    kwparams["start_date"] = start_date
+                end_date = get_timestamp(entry.get("end_date"))
+                if end_date:
+                    kwparams["end_date"] = end_date
+
+                post_exist = False
                 if entry.get("post_id"):
                     post = self.fetch_post(entry["post_id"])
                     if not post:
                         continue
                     if self.graph.match_one(person, role, post):
+                        post_exist = True
                         logging.warning("Already exist, skipping")
-                    else:
-                        relationship = Relationship(person, role, post)
+
+                    if not post_exist:
+
+                        relationship = Relationship(person, role, post, **kwparams)
                         self.graph.create(relationship)
+
+                organization_exist = False
+
                 if entry.get("organization_id"):
                     organization = self.fetch_organization(entry["organization_id"])
                     if not organization:
                         continue
                     if self.graph.match_one(person, role, organization):
                         logging.warning("Already exist, skipping")
-                    else:
-                        relationship = Relationship(person, role, organization)
+                        organization_exist = True
+
+                    if not organization_exist:
+
+                        relationship = Relationship(person, role, organization, **kwparams)
                         self.graph.create(relationship)
 
             if data.get("next_url"):
@@ -98,7 +128,17 @@ class PopItToNeo(object):
         else:
             name = entity["name"]
         logging.warning("Name: %s" % name)
-        node = Node("Persons", name=name, popit_id=entity["id"])
+        kwparam = {}
+
+        birth_date = get_timestamp(entity.get("birth_date"))
+        if birth_date:
+            kwparam["birth_date"] = birth_date
+        death_date = get_timestamp(entity.get("death_date"))
+        if death_date:
+            kwparam["death_date"] = death_date
+        kwparam["name"] = name
+        kwparam["popit_id"] = entity["id"]
+        node = Node("Persons", **kwparam)
         self.graph.create(node)
         self.person_processed[entity["id"]] = node
         return node
@@ -127,13 +167,23 @@ class PopItToNeo(object):
         else:
             name = entity["name"]
 
+        kwparams = {}
         logging.warning("Name: %s" % name)
+        kwparams["name"] = name
+        kwparams["popit_id"] = entity["id"]
+        founding_date = get_timestamp(entity.get("founding_date"))
+        if founding_date:
+            kwparams["founding_date"] = founding_date
+        dissolution_date = get_timestamp(entity.get("dissolution_date"))
+        if dissolution_date:
+            kwparams["dissolution_date"] = dissolution_date
+
         if "classification" in entity:
 
             logging.warning("Classification:%s" % entity["classification"])
-            node = Node("Organization", name=name, popit_id=entity["id"], classification=entity["classification"])
-        else:
-            node = Node("Organization", name=name, popit_id=entity["id"])
+            kwparams["classification"] = entity["classification"]
+
+        node = Node("Organization", **kwparams)
         self.graph.create(node)
         self.organization_processed[entity["id"]] = node
         return node
@@ -168,11 +218,27 @@ class PopItToNeo(object):
             logging.warning(e.message)
             organization = None
         logging.warning("Label: %s" % entity["label"])
-        node = Node("Posts", name=entity["label"], popit_id=entity["id"])
+        kwparams = {}
+        kwparams["name"] = entity["label"]
+        kwparams["popit_id"] = entity["id"]
+        start_date = get_timestamp(entity.get("start_date"))
+        if start_date:
+            kwparams["start_date"] = start_date
+
+        end_date = get_timestamp(entity.get("end_date"))
+        if end_date:
+            kwparams["end_date"] = end_date
+
+        node = Node("Posts", **kwparams)
         self.graph.create(node)
         self.post_processed[entity["id"]] = node
         if organization:
-            relation = Relationship(node, "of", organization)
+            temp_param = {}
+            if start_date:
+                temp_param["start_date"] = start_date
+            if end_date:
+                temp_param["end_date"] = end_date
+            relation = Relationship(node, "of", organization, **kwparams)
             self.graph.create(relation)
 
         return node
@@ -237,6 +303,26 @@ class PopItToNeo(object):
             # Just to make output consistent, excception did not kill the script anyway
             return {}
         return r.json()
+
+def get_timestamp(timestr):
+    timestamp = None
+    logging.warn(timestr)
+    if not timestr:
+        return timestamp
+    if re.match(r"^0000", timestr):
+        return timestamp
+    if re.match(r"^9999", timestr):
+        return timestamp
+    pattern = re.match(r"\d{4}(\-\d{1,2}\-\d{1,2})*", timestr)
+    if not pattern:
+        return timestamp
+    try:
+        start_date = parse(pattern.group(), default=DEFAULT_DATE)
+    except ValueError as e:
+        return timestamp
+
+    timestamp = time.mktime(start_date.timetuple())
+    return timestamp
 
 
 if __name__ == "__main__":
