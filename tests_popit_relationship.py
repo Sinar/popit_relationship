@@ -57,5 +57,48 @@ class MyTestCase(unittest.TestCase):
         self.popittoneo.process_posts()
         call('node1') in mock_create.call_args_list
 
+    @patch("popit_to_neo4j.Graph.find_one")
+    @patch("popit_to_neo4j.PopItToNeo.fetch_entity")
+    @patch("popit_to_neo4j.Node")
+    @patch("py2neo.Graph.create")
+    def test_fetch_organization(self, mock_create, mock_node, mock_fetch_entity, mock_find_one):
+        self.popittoneo.organization_processed = {'1': 'one'}
+        self.popittoneo.fetch_organization('1')
+        self.assertFalse(mock_find_one.called)
+        self.popittoneo.organization_processed.clear()
+        mock_find_one.return_value = 'hulahoop'
+        self.assertEqual(self.popittoneo.organization_processed, {})
+        result = self.popittoneo.fetch_organization('1')
+        self.assertEqual(self.popittoneo.organization_processed,
+                         {'1': 'hulahoop'})
+        self.assertEqual(result, 'hulahoop')
+
+        self.popittoneo.organization_processed.clear()
+        mock_find_one.return_value = None
+        mock_fetch_entity.return_value = None
+        result = self.popittoneo.fetch_organization('1')
+        self.assertEqual(mock_fetch_entity.call_args_list,
+                         [call('https://sinar-malaysia.popit.mysociety.org/api/v0.1/organizations/1')])
+        self.assertIsNone(result)
+
+        mock_result = {"result": {"name": "name",
+                                  "id": "id",
+                                  "founding_date": "1971-01-01",
+                                  "dissolution_date": "2000-01-01",
+                                  "classification": "classification"}}
+        self.popittoneo.organization_processed.clear()
+        mock_find_one.return_value = None
+        mock_fetch_entity.return_value = mock_result
+        mock_node.return_value = 'hulahoop'
+        result = self.popittoneo.fetch_organization('1')
+        self.assertEqual(mock_create.call_args_list, [call('hulahoop')])
+        self.assertEqual(self.popittoneo.organization_processed,
+                         {'id': 'hulahoop'})
+        self.assertListEqual(mock_node.call_args_list,
+                             [call('Organization', dissolution_date=946656000.0, founding_date=31509000.0,
+                                   classification='classification', name='name', popit_id='id')])
+        self.assertEqual(result, 'hulahoop')
+
+
 if __name__ == '__main__':
     unittest.main()
