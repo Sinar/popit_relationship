@@ -10,8 +10,7 @@ class MyTestCase(unittest.TestCase):
     @patch("__builtin__.open")
     @patch("py2neo.Graph.delete_all")
     @patch("yaml.load")
-    def setUp(self, mock_load_config, mock_graph_delete, mock_open):
-
+    def setUp(self, mock_load_config, mock_delete_all, mock_open):
         mock_open.return_value = "config.yaml"
         self.base_graph = dict(graph_db='graph_db',
                                refresh=True)
@@ -46,37 +45,17 @@ class MyTestCase(unittest.TestCase):
         mock_load_config.side_effect = load_config
         popittoneo = PopItToNeo()
         self.assertTrue(mock_graph_delete.called)
-        for attr in ('organization_processed', 'person_processed',
-                     'post_processed'):
-            self.assertEqual(getattr(popittoneo, attr), {})
 
-    @patch("popit_to_neo4j.requests.get")
-    def test_fetch_entity_with_status(self, mock_get):
-
-        def return_json():
-            return "hulahoop"
-
-        for status, result in ((200, "hulahoop"), (400, {})):
-            mock_get.return_value.status_code = status
-            if status == 200:
-                mock_get.return_value.json.side_effect = return_json
-            else:
-                pass
-            data = self.popittoneo.fetch_entity("http://www.google.com")
-            self.assertEqual(data, result)
-
-    @patch("time.mktime")
-    def test_get_timestamp(self, mock_mktime):
-
-        """Test get_timestamp function"""
-
-        from popit_to_neo4j import get_timestamp
-        mock_mktime.return_value = "hulahoop"
-        for invalid_input in ("", "hulahoop", "00000", "4-5-6"):
-            self.assertIsNone(get_timestamp(invalid_input))
-        data = get_timestamp("2015-09-07")
-        self.assertTrue(mock_mktime.called)
-        self.assertEqual(data, "hulahoop")
+    @patch("popit_to_neo4j.PopItToNeo.fetch_entity")
+    @patch("popit_to_neo4j.PopItToNeo.fetch_post")
+    @patch("logging.warning")
+    @patch("popit_to_neo4j.Graph.create")
+    def test_process_post(self, mock_create, mock_warning,
+                          mock_fetch_post, mock_fetch_entity):
+        mock_fetch_entity.return_value = {"result": [{"id": "node1"}]}
+        mock_fetch_post.return_value = "node1"
+        self.popittoneo.process_posts()
+        call('node1') in mock_create.call_args_list
 
 if __name__ == '__main__':
     unittest.main()
