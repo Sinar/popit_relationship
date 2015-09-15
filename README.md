@@ -20,6 +20,9 @@ After that install the necessary python dependencies
 pip install -r requirements.txt
 ```
 
+Usage
+=====
+
 There are no parameters needed to run `popit_to_neo4j.py`, just run the script
 ```Shell
 $ python popit_to_neo4j.py
@@ -36,4 +39,4 @@ p.build_graph()
 nx.draw(p)
 ```
 
-Will add more documentation, and more code as I hack around
+More documentation will be added as code matures.
