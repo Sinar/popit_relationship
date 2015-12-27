@@ -28,7 +28,7 @@ There are no parameters needed to run `popit_to_neo4j.py`, just run the script
 $ python popit_to_neo4j.py
 ```
 
-For `popit_to_networkx.py`, i did not make a complete solution
+For `popit_to_networkx.py`, the solution is incomplete
 ```python
 import networkx as nx
 import matplotlib as plt
