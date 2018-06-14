@@ -16,7 +16,7 @@ DEFAULT_DATE = datetime.date(1945,1,1)
 class PopItToNeo(object):
     def __init__(self):
         config = yaml.load(open("config.yaml"))
-        self.endpoint = "https://sinar-malaysia.popit.mysociety.org/api/v0.1"
+        self.endpoint = "https://api.popit.sinarproject.org/en"
 
         # you know so that you can override this. why? I am not sure
         self.membership_field = "memberships"
@@ -41,14 +41,14 @@ class PopItToNeo(object):
             data = self.fetch_entity(membership_url)
             logging.warning("Processing membership")
 
-            entries = data["result"]
+            entries = data["results"]
             for entry in entries:
 
                 # a membership have 3 important field, person_id, organization_id, posts_id
-                if not (entry.get("person_id") and entry.get("organization_id")):
+                if not (entry.get("person") and entry.get("organization")):
                     continue
 
-                person = self.fetch_person(entry["person_id"])
+                person = self.fetch_person(entry["person"])
                 if not person:
                     continue
                 role = entry.get("role","member")
@@ -69,11 +69,11 @@ class PopItToNeo(object):
                     kwparams["end_date"] = end_date
 
                 post_exist = False
-                if entry.get("post_id"):
-                    post = self.fetch_post(entry["post_id"])
+                if entry.get("post"):
+                    post = self.fetch_post(entry["post"])
                     if not post:
                         continue
-                    if self.graph.match_one(person, role, post):
+                    if self.relationship_exist(person, role, post):
                         post_exist = True
                         logging.warning("Already exist, skipping")
 
@@ -84,11 +84,11 @@ class PopItToNeo(object):
 
                 organization_exist = False
 
-                if entry.get("organization_id"):
-                    organization = self.fetch_organization(entry["organization_id"])
+                if entry.get("organization"):
+                    organization = self.fetch_organization(entry["organization"])
                     if not organization:
                         continue
-                    if self.graph.match_one(person, role, organization):
+                    if self.relationship_exist(person, role, organization):
                         logging.warning("Already exist, skipping")
                         organization_exist = True
 
@@ -107,7 +107,7 @@ class PopItToNeo(object):
             logging.warning("Person %s fetch from cache" % person_id)
             return self.person_processed[person_id]
 
-        node = self.graph.find_one("Persons", "popit_id", person_id)
+        node = self.entity_exist("Persons", person_id)
         if node:
             logging.warning("Already exist, skipping")
             self.person_processed[person_id] = node
@@ -148,7 +148,7 @@ class PopItToNeo(object):
             logging.warning("Organization %s fetch from cache" % organization_id)
             return self.organization_processed[organization_id]
 
-        node = self.graph.find_one("Organization", "popit_id", organization_id)
+        node = self.entity_exist("Organization", organization_id)
         if node:
             logging.warning("Already exist, skipping")
             self.organization_processed[organization_id] = node
@@ -193,7 +193,7 @@ class PopItToNeo(object):
             logging.warning("Post %s fetch from cache" % post_id)
             return self.post_processed[post_id]
 
-        node = self.graph.find_one("Posts", "popit_id", post_id)
+        node = self.entity_exist("Posts", post_id)
         if node:
             logging.warning("Already exist, skipping")
             self.post_processed[post_id] = node
@@ -210,12 +210,12 @@ class PopItToNeo(object):
         # Fetch organization node, because post is link to organization
         # What is the implication of post without organization?
         try:
-            if entity.get("organization_id"):
-                organization = self.fetch_organization(entity["organization_id"])
+            if entity.get("organization"):
+                organization = self.fetch_organization(entity["organization"])
             else:
                 organization = None
         except Exception as e:
-            logging.warning(e.message)
+            logging.warning(e)
             organization = None
         logging.warning("Label: %s" % entity["label"])
         kwparams = {}
@@ -250,7 +250,7 @@ class PopItToNeo(object):
         while True:
             data = self.fetch_entity(organizations_url)
 
-            entries = data["result"]
+            entries = data["results"]
             for entry in entries:
                 if not entry.get("parent_id"):
                     logging.warning("No parent id, moving on")
@@ -264,11 +264,11 @@ class PopItToNeo(object):
                     continue
                 child_node = self.fetch_organization(entry["id"])
                 parent_relationship = Relationship(parent_node, "parent_of", child_node)
-                if self.graph.match_one(parent_node, "parent_of", child_node):
+                if self.relationship_exist(parent_node, "parent_of", child_node):
                     logging.warning("relation exist %s %s" % (entry["id"], entry["parent_id"]))
                     continue
                 self.graph.create(parent_relationship)
-                if self.graph.match_one(child_node, "child_of", parent_node):
+                if self.relationship_exist(child_node, "child_of", parent_node):
                     logging.warning("relation exist %s %s" % (entry["id"], entry["parent_id"]))
                     continue
                 child_relationship = Relationship(child_node, "child_of", parent_node)
@@ -284,7 +284,7 @@ class PopItToNeo(object):
         post_url = "%s/%s" % (self.endpoint, self.post_field)
         while True:
             data = self.fetch_entity(post_url)
-            entries = data["result"]
+            entries = data["results"]
             for entry in entries:
                 node = self.fetch_post(entry["id"])
                 self.graph.create(node)
@@ -304,6 +304,19 @@ class PopItToNeo(object):
             return {}
         return r.json()
 
+    def entity_exist(self, entity, popit_id):
+        nodes = self.graph.nodes
+        node = nodes.match(entity, popit_id=popit_id)
+        if node:
+            return True
+        return False
+
+    def relationship_exist(self, source_entity, relationship, target_entity):
+        relationships = self.graph.match_one([source_entity, target_entity], r_type=relationship)
+        if relationships:
+            return True
+        return False
+
 def get_timestamp(timestr):
     timestamp = None
     logging.warn(timestr)
@@ -321,7 +334,9 @@ def get_timestamp(timestr):
     except ValueError as e:
         return timestamp
 
-    timestamp = time.mktime(start_date.timetuple())
+    epoch = datetime.date(1970, 1, 1)
+    diff = epoch - start_date
+    timestamp = diff.total_seconds()
     return timestamp
 
 
