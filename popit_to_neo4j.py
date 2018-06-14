@@ -97,8 +97,8 @@ class PopItToNeo(object):
                         relationship = Relationship(person, role, organization, **kwparams)
                         self.graph.create(relationship)
 
-            if data.get("next_url"):
-                membership_url = data.get("next_url")
+            if data.get("next"):
+                membership_url = data.get("next")
             else:
                 break
 
@@ -274,8 +274,8 @@ class PopItToNeo(object):
                 child_relationship = Relationship(child_node, "child_of", parent_node)
                 self.graph.create(child_relationship)
 
-            if "next_url" in data:
-                organizations_url = data["next_url"]
+            if data.get("next"):
+                organizations_url = data["next"]
                 logging.warning(organizations_url)
             else:
                 break
@@ -290,8 +290,8 @@ class PopItToNeo(object):
                 self.graph.create(node)
                 # Since creating organization relationship is already part of getting post
                 # ourjob is done here
-            if "next_url" in data:
-                post_url = data["next_url"]
+            if data.get("next"):
+                post_url = data["next"]
                 logging.warning(post_url)
             else:
                 break
@@ -308,14 +308,14 @@ class PopItToNeo(object):
         nodes = self.graph.nodes
         node = nodes.match(entity, popit_id=popit_id)
         if node:
-            return True
-        return False
+            return node.first()
+        return None
 
     def relationship_exist(self, source_entity, relationship, target_entity):
         relationships = self.graph.match_one([source_entity, target_entity], r_type=relationship)
         if relationships:
-            return True
-        return False
+            return relationships
+        return None
 
 def get_timestamp(timestr):
     timestamp = None
