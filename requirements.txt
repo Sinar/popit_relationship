@@ -3,4 +3,4 @@ ipython==6.4.0
 py2neo==4.0.0
 requests==2.18.4
 python-dateutil==2.7.3
-
+neo4j-driver==1.6.2
