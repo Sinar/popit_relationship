@@ -1,4 +1,4 @@
-PyYAML==5.1
+PyYAML==5.1.2
 ipython==6.4.0
 py2neo==4.1.0
 prompt-toolkit==1.0.15
