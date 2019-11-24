@@ -2,21 +2,22 @@ __author__ = 'sweemeng'
 from py2neo import Graph
 from py2neo import Node
 from py2neo import Relationship
+from dateutil.parser import parse
 import requests
 import time
 import datetime
-from dateutil.parser import parse
 import logging
 import yaml
 import re
 
 # Because a bulk of history started in 1945 after WW2. It's complicated
-DEFAULT_DATE = datetime.date(1945,1,1)
+DEFAULT_DATE = datetime.date(1945, 1, 1)
+
 
 class PopItToNeo(object):
     def __init__(self):
-        config = yaml.load(open("config.yaml"))
-        self.endpoint = "https://api.popit.sinarproject.org/en"
+        config = yaml.safe_load(open("config.yaml"))
+        self.endpoint = "http://api.popit.sinarproject.org/en"
 
         # you know so that you can override this. why? I am not sure
         self.membership_field = "memberships"
@@ -24,7 +25,7 @@ class PopItToNeo(object):
         self.organization_field = "organizations"
         self.post_field = "posts"
         self.graph = Graph(config["graph_db"])
-        if config["refresh"] == True:
+        if config["refresh"]:
             self.graph.delete_all()
 
         # Because I am still not familiar to query with cypher
@@ -44,19 +45,18 @@ class PopItToNeo(object):
             entries = data["results"]
             for entry in entries:
 
-                # a membership have 3 important field, person_id, organization_id, posts_id
+                # a membership have 3 important field
+                # person_id, organization_id, posts_id
                 if not (entry.get("person") and entry.get("organization")):
                     continue
 
                 person = self.fetch_person(entry["person"])
                 if not person:
                     continue
-                role = entry.get("role","member")
+                role = entry.get("role", "member")
                 if not role:
                     role = "member"
                 logging.warning("Role: %s" % role)
-
-                params = []
 
                 # This happens only once anyway
                 kwparams = {}
@@ -246,7 +246,6 @@ class PopItToNeo(object):
     def process_parent_company(self):
         organizations_url = "%s/%s" % (self.endpoint, self.organization_field)
 
-
         while True:
             data = self.fetch_entity(organizations_url)
 
@@ -316,6 +315,7 @@ class PopItToNeo(object):
         if relationships:
             return relationships
         return None
+
 
 def get_timestamp(timestr):
     timestamp = None
