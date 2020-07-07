@@ -31,7 +31,7 @@ def db_init(session):
 
 @click.group()
 @coro
-async def main():
+async def app():
     pass
 
 
@@ -68,10 +68,14 @@ def sync_relationship():
     print("sync relationship")
 
 
-if __name__ == "__main__":
+def main():
     load_dotenv()
 
-    main.add_command(sync)
+    app.add_command(sync)
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    loop.run_until_complete(app())
+
+
+if __name__ == "__main__":
+    main()
