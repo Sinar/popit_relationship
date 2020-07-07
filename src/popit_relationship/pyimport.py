@@ -68,10 +68,11 @@ def sync_relationship():
     print("sync relationship")
 
 
+app.add_command(sync)
+
+
 def main():
     load_dotenv()
-
-    app.add_command(sync)
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(app())
