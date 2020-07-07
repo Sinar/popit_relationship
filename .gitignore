@@ -1,2 +1,7 @@
+dist/
 .idea/
+.vscode/
+.env
+.python-version
 config.yaml
+poetry.lock

@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "popit_relationship"
+version = "0.1.0"
+description = ""
+authors = ["Jeffrey04 <mycyberpet@yahoo.com>", "sweemeng <sweemeng@sinarproject.org>"]
+
+[tool.poetry.dependencies]
+python = "^3.6"
+click = "^7.1.2"
+python-dotenv = "^0.14.0"
+neo4j = "^4.0.1"
+aiohttp = {extras = ["speedups"], version = "^3.6.2"}
+ujson = "^3.0.0"
+
+[tool.poetry.dev-dependencies]
+prospector = "^1.3.0"
+black = "^19.10b0"
+pytest = "^5.4.3"
+
+[tool.poetry.scripts]
+primport = 'popit_relationship.pyimport:main'
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
