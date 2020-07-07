@@ -48,12 +48,11 @@ def sync():
 async def sync_person():
     print("sync person")
 
-    with db_driver() as driver:
-        async with aiohttp.ClientSession(
-            headers={"Accept": "application/json"}, json_serialize=ujson.dumps
-        ) as session_api:
-            with driver.session() as session_db:
-                db_init(session_db)
+    async with aiohttp.ClientSession(
+        headers={"Accept": "application/json"}, json_serialize=ujson.dumps
+    ) as session_api:
+        with db_driver() as driver, driver.session() as session_db:
+            db_init(session_db)
 
             async with session_api.get(
                 os.environ.get(
