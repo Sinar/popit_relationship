@@ -38,6 +38,19 @@ async def person():
             print(person_build_node(person))
 
 
+def person_build_node(person):
+    return valfilter(
+        lambda x: x is not None,
+        {
+            "id": person.get("@id", None),
+            "gender": get_in(["gender", "title"], person, None),
+            "head_shot": get_in(["image", "download"], person, None),
+            "summary": person.get("summary", None),
+            "biography": person.get("biography", None),
+        },
+    )
+
+
 async def person_fetch(session_api, b_start=0, _result=None):
     async with session_api.get(
         os.environ.get("API_ENDPOINT", "https://politikus.sinarproject.org/@search"),
@@ -60,19 +73,6 @@ async def person_fetch(session_api, b_start=0, _result=None):
             if "next" in page.get("batching", {})
             else result
         )
-
-
-def person_build_node(person):
-    return valfilter(
-        lambda x: x is not None,
-        {
-            "id": person.get("@id", None),
-            "gender": get_in(["gender", "title"], person, None),
-            "head_shot": get_in(["image", "download"], person, None),
-            "summary": person.get("summary", None),
-            "biography": person.get("biography", None),
-        },
-    )
 
 
 @sync.command("relationship")
