@@ -43,7 +43,7 @@ def person_build_node(person):
         lambda x: x is not None,
         {
             "id": person.get("@id", None),
-            "gender": get_in(["gender", "title"], person, None),
+            "gender": get_in(["gender", "token"], person, None),
             "head_shot": get_in(["image", "download"], person, None),
             "summary": person.get("summary", None),
             "biography": person.get("biography", None),
