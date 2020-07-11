@@ -1,9 +1,9 @@
 import asyncio
-import sys
 
-from dotenv import load_dotenv
-from popit_relationship.sync import sync
 import click
+from dotenv import load_dotenv
+
+from popit_relationship.sync import sync
 
 
 @click.command()
