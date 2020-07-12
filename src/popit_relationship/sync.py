@@ -22,16 +22,9 @@ def sync():
 
 
 @sync.command("all")
-@click.confirmation_option(
-    prompt="The specified database will be deleted, is the data backed up?"
-)
 @coro
 @click.pass_context
 async def all_sync(ctx):
-    graph = graph_init()
-    graph.clear()
-    graph_save(graph)
-
     await tree_import(TYPE_PERSON, "Person", person_build_node)
     await tree_import(TYPE_ORGANIZATION, "Organization", organization_build_node)
     await tree_import(TYPE_POST, "Post", post_build_node)
@@ -58,12 +51,12 @@ def membership_build_node(membership):
                 },
                 {
                     "subject": membership["@id"],
-                    "predicate": "http://www.w3.org/TR/vocab-org/#org:member",
+                    "predicate": "http://www.w3.org/ns/org#member",
                     "object": get_in(["person", "@id"], membership, None),
                 },
                 {
                     "subject": membership["@id"],
-                    "predicate": "http://www.w3.org/TR/vocab-org/#org:organization",
+                    "predicate": "http://www.w3.org/ns/org#organization",
                     "object": get_in(["organization", "@id"], membership, None),
                 },
                 {
@@ -101,7 +94,7 @@ def post_build_node(post):
                 },
                 {
                     "subject": post["@id"],
-                    "predicate": "http://www.w3.org/TR/vocab-org/#org:organization",
+                    "predicate": "http://www.w3.org/ns/org#organization",
                     "object": get_in(["organization", "@id"], post, None),
                 },
             ]
@@ -135,7 +128,7 @@ def organization_build_node(organization):
                 },
                 {
                     "subject": organization["@id"],
-                    "predicate": "http://www.w3.org/ns/org#org:subOrganizationOf",
+                    "predicate": "http://www.w3.org/ns/org#subOrganizationOf",
                     "object": get_in(
                         ["parent_organization", "@id"], organization, None
                     ),
@@ -164,7 +157,7 @@ def person_build_node(person):
                 "gender": get_in(["gender", "token"], person, None),
                 "head_shot": get_in(["image", "download"], person, None),
                 "summary": person.get("summary", None),
-                "biography": person.get("biography", None),
+                "biography": get_in(["biography", "data"], person, None),
             },
         ),
         [
