@@ -43,60 +43,61 @@ def save():
 
 
 def save_graph(tx, graph):
-    for node, node_type_uri, _ in [
-        (i, j, k) for i, j, k in graph.edges if k == KEY_TYPE
-    ]:
-        save_node(tx, graph, node_type_uri, node)
+    for node, dest, key in graph.edges:
+        node_save(tx, graph, node)
 
-        for dest in graph.successors(node):
-            for key, _ in graph.succ[node][dest].items():
-                rel_type = urlsplit(key).fragment
+        if key == KEY_TYPE:
+            tx.run(
+                """
+                MERGE (node:Type {id: $id, name: $name})
+                """,
+                id=dest,
+                name=urlsplit(dest).fragment,
+            )
+        else:
+            node_save(tx, graph, dest)
 
-                if key == KEY_TYPE:
-                    tx.run(
-                        """
-                        MERGE (node:Type {id: $id})
-                        """,
-                        id=dest,
-                    )
-                else:
-                    tx.run(
-                        """
-                        MERGE (node {id: $id})
-                        """,
-                        id=dest,
-                    )
-
-                tx.run(
-                    f"""
-                    MATCH (source {{id: $source_id}})
-                    MATCH (dest {{id: $dest_id}})
-                    MERGE (source)-[rel:{rel_type} {{predicate: $key}}]->(dest)
-                    """,
-                    source_id=node,
-                    dest_id=dest,
-                    key=key,
-                )
+        tx.run(
+            f"""
+            MATCH (source {{id: $source_id}})
+            MATCH (dest {{id: $dest_id}})
+            MERGE (source)-[rel:{urlsplit(key).fragment} {{predicate: $key}}]->(dest)
+            """,
+            source_id=node,
+            dest_id=dest,
+            key=key,
+        )
 
 
-def save_node(tx, graph, node_type_uri, node):
-    node_type = urlsplit(node_type_uri).fragment
+def node_get_type(graph, node):
+    try:
+        return [j for i, j, k in graph.edges if i == node and k == KEY_TYPE][0]
+    except IndexError:
+        return False
 
-    tx.run(
-        f"""
-        MERGE (node:{node_type} {{id: $id}})
-        """,
-        id=node,
-    )
 
-    tx.run(
-        f"""
-        MATCH (node:{node_type} {{id: $id}})
-        SET node = $attributes
-        """,
-        id=node,
-        attributes=dict(graph.nodes[node]),
-    )
+def node_save(tx, graph, node):
+    if node_get_type(graph, node):
+        tx.run(
+            f"MERGE (node:{urlsplit(node_get_type(graph, node)).fragment} {{id: $id}})",
+            id=node,
+        )
+
+        tx.run(
+            f"""
+            MATCH (node:{urlsplit(node_get_type(graph, node)).fragment} {{id: $id}})
+            SET node = $attributes
+            """,
+            id=node,
+            attributes=dict(graph.nodes[node]),
+        )
+    else:
+        tx.run(
+            """
+            MERGE (node {id: $id})
+            """,
+            id=node,
+        )
 
 
 @click.group()
