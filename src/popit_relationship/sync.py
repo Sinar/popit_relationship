@@ -176,7 +176,7 @@ def attribute_filter_empty(result):
 
 async def fetch(portal_type, session_api, b_start=0, _result=None):
     async with session_api.get(
-        os.environ.get("API_ENDPOINT", "https://politikus.sinarproject.org/@search"),
+        os.environ.get("ENDPOINT_API", "https://politikus.sinarproject.org/@search"),
         params=param_build(portal_type, b_start),
     ) as response:
         click.echo(f"Fetching from {response.url}")
