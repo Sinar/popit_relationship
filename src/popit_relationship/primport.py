@@ -46,27 +46,19 @@ def save_graph(tx, graph):
     for node, dest, key in graph.edges:
         node_save(tx, graph, node)
 
-        if key == KEY_TYPE:
-            tx.run(
-                """
-                MERGE (node:Type {id: $id, name: $name})
-                """,
-                id=dest,
-                name=urlsplit(dest).fragment,
-            )
-        else:
+        if not key == KEY_TYPE:
             node_save(tx, graph, dest)
 
-        tx.run(
-            f"""
-            MATCH (source {{id: $source_id}})
-            MATCH (dest {{id: $dest_id}})
-            MERGE (source)-[rel:{urlsplit(key).fragment} {{predicate: $key}}]->(dest)
-            """,
-            source_id=node,
-            dest_id=dest,
-            key=key,
-        )
+            tx.run(
+                f"""
+                MATCH (source {{id: $source_id}})
+                MATCH (dest {{id: $dest_id}})
+                MERGE (source)-[rel:{urlsplit(key).fragment} {{predicate: $key}}]->(dest)
+                """,
+                source_id=node,
+                dest_id=dest,
+                key=key,
+            )
 
 
 def node_get_type(graph, node):
