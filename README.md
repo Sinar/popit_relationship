@@ -48,7 +48,7 @@ Most of the configuration is saved within `.env` file, please refer to the `.env
 
 - `NEO4J_AUTH` stores the username and passsword pair separated by a backslash character `/`, e.g. `neo4j/s0meCompl!catedPassword`
 - `NEO4J_URI` stores the URI to the neo4j database, e.g. `bolt:hostname:7687`
-- `ENDPOINT_API` stores the ENDPOINT API URI, currently support only `https://politikus.sinarproject.org/@search`
+- `ENDPOINT_API` stores the ENDPOINT API URI, currently defaulted to `https://politikus.sinarproject.org/@search`, the script should work with other similar APIs
 - `CRAWL_INTERVAL` stores the time to wait between every API call (defaulted to `1` second)
 - `CACHE_PATH` stores the path to the cache file (defaulted to `./primport-cache.gpickle`)
 
