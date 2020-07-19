@@ -6,6 +6,7 @@ import networkx as nx
 from networkx.exception import NetworkXError
 
 CACHE_PATH_DEFAULT = "./primport-cache.gpickle"
+KEY_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
 
 
 def coro(f):
@@ -42,3 +43,10 @@ def graph_prune(graph, node_type):
 
 def graph_save(graph):
     return nx.write_gpickle(graph, os.environ.get("CACHE_PATH", CACHE_PATH_DEFAULT))
+
+
+def node_get_type(graph, node):
+    try:
+        return [j for i, j, k in graph.edges if i == node and k == KEY_TYPE][0]
+    except IndexError:
+        return False
