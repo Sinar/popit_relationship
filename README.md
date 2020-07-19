@@ -36,6 +36,12 @@ Install the built project with pip (filename of the `.whl` file may vary). Pleas
 pip3 install ./dist/popit_relationship-0.1.0-py3-none-any.whl
 ```
 
+If you are reinstalling after pulling the latest changes, add a `--force-reinstall` flag
+
+```
+pip3 install --force-reinstall ./dist/popit_relationship-0.1.0-py3-none-any.whl
+```
+
 ## Configuration
 
 Most of the configuration is saved within `.env` file, please refer to the `.env.example` for example. Besides `NEO4J_AUTH` and `NEO4J_URI`, the script should work with the default settings.
