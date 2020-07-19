@@ -36,13 +36,19 @@ Install the built project with pip (filename of the `.whl` file may vary). Pleas
 pip3 install ./dist/popit_relationship-0.1.0-py3-none-any.whl
 ```
 
+If you are reinstalling after pulling the latest changes, add a `--force-reinstall` flag
+
+```
+pip3 install --force-reinstall ./dist/popit_relationship-0.1.0-py3-none-any.whl
+```
+
 ## Configuration
 
 Most of the configuration is saved within `.env` file, please refer to the `.env.example` for example. Besides `NEO4J_AUTH` and `NEO4J_URI`, the script should work with the default settings.
 
 - `NEO4J_AUTH` stores the username and passsword pair separated by a backslash character `/`, e.g. `neo4j/s0meCompl!catedPassword`
 - `NEO4J_URI` stores the URI to the neo4j database, e.g. `bolt:hostname:7687`
-- `ENDPOINT_API` stores the ENDPOINT API URI, currently support only `https://politikus.sinarproject.org/@search`
+- `ENDPOINT_API` stores the ENDPOINT API URI, currently defaulted to `https://politikus.sinarproject.org/@search`, the script should work with other similar APIs
 - `CRAWL_INTERVAL` stores the time to wait between every API call (defaulted to `1` second)
 - `CACHE_PATH` stores the path to the cache file (defaulted to `./primport-cache.gpickle`)
 

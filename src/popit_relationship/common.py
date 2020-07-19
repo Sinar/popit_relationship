@@ -7,6 +7,7 @@ from networkx.exception import NetworkXError
 
 CACHE_PATH_DEFAULT = "./primport-cache.gpickle"
 KEY_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+KEY_RELATIONSHIP = "http://purl.org/vocab/relationship/Relationship"
 
 
 def coro(f):

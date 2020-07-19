@@ -70,10 +70,23 @@ def test_person_build_node():
         """
     )
 
-    expected = {
-        "id": "https://politikus.sinarproject.org/persons/mohammed-azhar-bin-osman-khairuddin",
-        "gender": "male",
-        "summary": "Mohammed Azhar bin Osman Khairuddin former director of Suria Strategic Energy Resources Sdn Bhd (SSER)",
-    }
+    expected = (
+        {
+            "id": "https://politikus.sinarproject.org/persons/mohammed-azhar-bin-osman-khairuddin",
+            "name": "Mohammed Azhar bin Osman Khairuddin",
+            "gender": "male",
+            "summary": "Mohammed Azhar bin Osman Khairuddin former director of Suria Strategic Energy Resources Sdn Bhd (SSER)",
+        },
+        [
+            {
+                "subject": "https://politikus.sinarproject.org/persons/mohammed-azhar-bin-osman-khairuddin",
+                "predicate": {
+                    "key": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                    "attributes": {},
+                },
+                "object": "https://www.w3.org/ns/person#Person",
+            }
+        ],
+    )
 
     assert sync.person_build_node(person) == expected
