@@ -14,6 +14,7 @@ TYPE_PERSON = "https://www.w3.org/ns/person#Person"
 TYPE_POST = "http://www.w3.org/ns/org#Post"
 TYPE_ORGANIZATION = "http://www.w3.org/ns/org#Organization"
 TYPE_MEMBERSHIP = "http://www.w3.org/ns/org#Membership"
+TYPE_RELATIONSHIP = "http://purl.org/vocab/relationship/Relationship"
 
 
 @click.group()
@@ -26,6 +27,7 @@ def sync():
 @click.pass_context
 async def all_sync(ctx):
     await tree_import(TYPE_PERSON, "Person", person_build_node)
+    await tree_import(TYPE_MEMBERSHIP, "Relationship", relationship_build_node)
     await tree_import(TYPE_ORGANIZATION, "Organization", organization_build_node)
     await tree_import(TYPE_POST, "Post", post_build_node)
     await tree_import(TYPE_MEMBERSHIP, "Membership", membership_build_node)
@@ -46,27 +48,42 @@ def membership_build_node(membership):
             [
                 {
                     "subject": membership["@id"],
-                    "predicate": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                    "predicate": {
+                        "key": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                        "attributes": {},
+                    },
                     "object": TYPE_MEMBERSHIP,
                 },
                 {
                     "subject": membership["@id"],
-                    "predicate": "http://www.w3.org/ns/org#member",
+                    "predicate": {
+                        "key": "http://www.w3.org/ns/org#member",
+                        "attributes": {},
+                    },
                     "object": get_in(["person", "@id"], membership, None),
                 },
                 {
                     "subject": membership["@id"],
-                    "predicate": "http://www.w3.org/ns/org#organization",
+                    "predicate": {
+                        "key": "http://www.w3.org/ns/org#organization",
+                        "attributes": {},
+                    },
                     "object": get_in(["organization", "@id"], membership, None),
                 },
                 {
                     "subject": membership["@id"],
-                    "predicate": "http://www.w3.org/ns/opengov#post",
+                    "predicate": {
+                        "key": "http://www.w3.org/ns/opengov#post",
+                        "attributes": {},
+                    },
                     "object": get_in(["post", "@id"], membership, None),
                 },
                 {
                     "subject": membership["@id"],
-                    "predicate": "http://www.w3.org/ns/opengov#onBehalfOf",
+                    "predicate": {
+                        "key": "http://www.w3.org/ns/opengov#onBehalfOf",
+                        "attributes": {},
+                    },
                     "object": get_in(["on_behalf_of", "@id"], membership, None),
                 },
             ]
@@ -89,12 +106,18 @@ def post_build_node(post):
             [
                 {
                     "subject": post["@id"],
-                    "predicate": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                    "predicate": {
+                        "key": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                        "attributes": {},
+                    },
                     "object": TYPE_POST,
                 },
                 {
                     "subject": post["@id"],
-                    "predicate": "http://www.w3.org/ns/org#organization",
+                    "predicate": {
+                        "key": "http://www.w3.org/ns/org#organization",
+                        "attributes": {},
+                    },
                     "object": get_in(["organization", "@id"], post, None),
                 },
             ]
@@ -123,12 +146,18 @@ def organization_build_node(organization):
             [
                 {
                     "subject": organization["@id"],
-                    "predicate": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                    "predicate": {
+                        "key": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                        "attributes": {},
+                    },
                     "object": TYPE_ORGANIZATION,
                 },
                 {
                     "subject": organization["@id"],
-                    "predicate": "http://www.w3.org/ns/org#subOrganizationOf",
+                    "predicate": {
+                        "key": "http://www.w3.org/ns/org#subOrganizationOf",
+                        "attributes": {},
+                    },
                     "object": get_in(
                         ["parent_organization", "@id"], organization, None
                     ),
@@ -136,6 +165,52 @@ def organization_build_node(organization):
             ]
         ),
     )
+
+
+@sync.command("rel")
+@coro
+async def relationship():
+    await tree_import(TYPE_RELATIONSHIP, "Relationship", relationship_build_node)
+
+
+def relationship_build_node(relationship):
+    return (
+        None,
+        [
+            {
+                "subject": relationship["relationship_subject"]["@id"],
+                "predicate": {
+                    "key": TYPE_RELATIONSHIP,
+                    "attributes": relationship_get_attributes(relationship),
+                },
+                "object": relationship["relationship_object"]["@id"],
+            }
+        ],
+    )
+
+
+def relationship_get_attributes(relationship):
+    result, type_name = {}, get_in(["relationship_type", "token"], relationship, None)
+
+    type_uri = {
+        "associate": "http://purl.org/vocab/relationship/collaboratesWith",
+        "employer": "http://purl.org/vocab/relationship/employerOf",
+        "parent": "http://purl.org/vocab/relationship/parentOf",
+        "spouse": "http://purl.org/vocab/relationship/spouseOf",
+        "subordinate": "http://purl.org/vocab/relationship/employedBy",
+    }
+
+    if type_name and type_uri.get(type_name, None):
+        result = {
+            "name": relationship["relationship_type"]["token"],
+            "uri": type_uri[type_name],
+        }
+    elif type_name:
+        result = {"type": type_name}
+    else:
+        result = {}
+
+    return result
 
 
 def param_build(portal_type, b_start):
@@ -163,7 +238,10 @@ def person_build_node(person):
         [
             {
                 "subject": person["@id"],
-                "predicate": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                "predicate": {
+                    "key": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                    "attributes": {},
+                },
                 "object": TYPE_PERSON,
             }
         ],
@@ -215,7 +293,9 @@ async def tree_build(portal_type, node_builder, session):
     return reduce(
         lambda current, incoming: dict(
             {},
-            nodes=dict(current["nodes"], **{incoming[0]["id"]: incoming[0]}),
+            nodes=dict(current["nodes"], **{incoming[0]["id"]: incoming[0]})
+            if incoming[0]
+            else current["nodes"],
             relationships=current["relationships"] + incoming[1],
         ),
         [node_builder(entity) for entity in await fetch(portal_type, session)],
@@ -242,5 +322,6 @@ def tree_insert(graph, nodes, relationships):
         graph.add_edge(
             relationship["subject"],
             relationship["object"],
-            key=relationship["predicate"],
+            key=relationship["predicate"]["key"],
+            **relationship["predicate"]["attributes"],
         )
