@@ -13,6 +13,7 @@ aiohttp = {extras = ["speedups"], version = "^3.6.2"}
 ujson = "^3.0.0"
 toolz = "^0.10.0"
 networkx = "^2.4"
+matplotlib = "^3.3.0"
 
 [tool.poetry.dev-dependencies]
 black = "^19.10b0"

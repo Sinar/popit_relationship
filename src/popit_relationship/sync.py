@@ -277,6 +277,16 @@ async def fetch(portal_type, session_api, b_start=0, _result=None):
         )
 
 
+def node_is_class(node):
+    return node in (
+        TYPE_PERSON,
+        TYPE_RELATIONSHIP,
+        TYPE_ORGANIZATION,
+        TYPE_POST,
+        TYPE_MEMBERSHIP,
+    )
+
+
 def relationship_filter_empty(result):
     return [
         relationship for relationship in result if relationship["object"] is not None
