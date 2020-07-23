@@ -15,6 +15,7 @@ The project depends on the following tools / python package in order to build an
    ```
    pip3 install wheel
    ```
+1. In order to generate graph, python would need to be compiled to work with `tk-dev` package on Ubuntu.
 
 ### Building
 
@@ -76,6 +77,9 @@ NEO4J_AUTH=neo4j/someOtherPassword primport reset db
 - `primport sync post` fetches the `Post` API
 - `primport sync membership` fetches the `Membership` relationship API
 - `primport sync all` fetches all of the above
+- `primport visualize $node1 [$node2 $node3 ...]` generates a graph from cache including `$node1` (`$node2`, `$node3` etc are optional).
+  - Each `$node` is a URI to an entity, for instance `https://politikus.sinarproject.org/organizations/government-linked-companies/1mdb-real-estate-sdn-bhd`
+  - The maximum depth can be overwritten by passing `--depth` flag, eg. `--depth=1` (value is defaulted to `3`).
 
 ### Saving to the database
 
