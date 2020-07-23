@@ -197,7 +197,6 @@ def relationship_get_attributes(relationship):
         "employer": "http://purl.org/vocab/relationship/employerOf",
         "parent": "http://purl.org/vocab/relationship/parentOf",
         "spouse": "http://purl.org/vocab/relationship/spouseOf",
-        "subordinate": "http://purl.org/vocab/relationship/employedBy",
     }
 
     if type_name and type_uri.get(type_name, None):
@@ -206,7 +205,7 @@ def relationship_get_attributes(relationship):
             "uri": type_uri[type_name],
         }
     elif type_name:
-        result = {"type": type_name}
+        result = {"name": type_name}
     else:
         result = {}
 
