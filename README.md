@@ -75,7 +75,9 @@ NEO4J_AUTH=neo4j/someOtherPassword primport reset db
 - `primport sync person` fetches the `Person` API
 - `primport sync org` fetches the `Organization` API
 - `primport sync post` fetches the `Post` API
-- `primport sync membership` fetches the `Membership` relationship API
+- `primport sync membership` fetches the `Membership` API
+- `primport sync relationship` fetches the `Relationship` API
+- `primport sync ownership` fetches the `Ownership Control Statement` API
 - `primport sync all` fetches all of the above
 - `primport visualize $node1 [$node2 $node3 ...]` generates a graph from cache including `$node1` (`$node2`, `$node3` etc are optional).
   - Each `$node` is a URI to an entity, for instance `https://politikus.sinarproject.org/organizations/government-linked-companies/1mdb-real-estate-sdn-bhd`
