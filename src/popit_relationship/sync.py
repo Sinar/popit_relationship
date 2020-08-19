@@ -16,6 +16,8 @@ TYPE_ORGANIZATION = "http://www.w3.org/ns/org#Organization"
 TYPE_MEMBERSHIP = "http://www.w3.org/ns/org#Membership"
 TYPE_RELATIONSHIP = "http://purl.org/vocab/relationship/Relationship"
 
+SINAR_NS_MOCK = "https://sinarproject.org/ns/ownership#"
+
 
 @click.group()
 def sync():
@@ -27,10 +29,15 @@ def sync():
 @click.pass_context
 async def all_sync(ctx):
     await tree_import(TYPE_PERSON, "Person", person_build_node)
-    await tree_import(TYPE_MEMBERSHIP, "Relationship", relationship_build_node)
+    await tree_import(TYPE_RELATIONSHIP, "Relationship", relationship_build_node)
     await tree_import(TYPE_ORGANIZATION, "Organization", organization_build_node)
     await tree_import(TYPE_POST, "Post", post_build_node)
     await tree_import(TYPE_MEMBERSHIP, "Membership", membership_build_node)
+    await tree_import(
+        f"{SINAR_NS_MOCK}ownershipOrControlStatement",
+        "Ownership Control Statement",
+        ownership_build_node,
+    )
 
 
 @sync.command("membership")
@@ -86,6 +93,41 @@ def membership_build_node(membership):
                     },
                     "object": get_in(["on_behalf_of", "@id"], membership, None),
                 },
+            ]
+        ),
+    )
+
+
+@sync.command("ownership")
+@coro
+async def ownership():
+    await tree_import(
+        f"{SINAR_NS_MOCK}ownershipOrControlStatement",
+        "Ownership Control Statement",
+        ownership_build_node,
+    )
+
+
+def ownership_build_node(ownership):
+    return (
+        None,
+        relationship_filter_empty(
+            [
+                {
+                    "subject": get_in(["interestedParty", "@id"], ownership, None),
+                    "predicate": {
+                        "key": f"{SINAR_NS_MOCK}ownershipOrControlStatement",
+                        "attributes": {
+                            "interest_level": get_in(
+                                ["interest_level", "token"], ownership, None
+                            ),
+                            "interest_type": get_in(
+                                ["interest_type", "token"], ownership, None
+                            ),
+                        },
+                    },
+                    "object": ownership["parent"]["@id"],
+                }
             ]
         ),
     )
@@ -288,7 +330,9 @@ def node_is_class(node):
 
 def relationship_filter_empty(result):
     return [
-        relationship for relationship in result if relationship["object"] is not None
+        relationship
+        for relationship in result
+        if relationship["object"] is not None and relationship["subject"] is not None
     ]
 
 

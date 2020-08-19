@@ -58,14 +58,14 @@ def node_save_relationship(tx, graph, node, dest, key):
             MATCH (dest {{id: $dest_id}})
             MERGE (source)
                 -[rel:{arrow_get_type(predicate)}
-                    {{predicate: $predicate, key: $key, name: $name}}]->
+                    {{predicate: $predicate, key: $key, {(', ').join('data_{key}: $data_{key}'.format(key=data_key) for data_key, value in data.items() if value)}}}]->
                 (dest)
             """,
             source_id=node,
             dest_id=dest,
             predicate=predicate,
             key=key,
-            name=data["name"],
+            **{f"data_{key}": value for key, value in data.items() if value},
         )
     else:
         tx.run(
