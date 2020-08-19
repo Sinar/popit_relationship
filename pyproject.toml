@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "popit_relationship"
-version = "0.1.1"
+version = "0.1.2"
 description = ""
 authors = ["Jeffrey04 <mycyberpet@yahoo.com>", "sweemeng <sweemeng@sinarproject.org>"]
 
