@@ -126,7 +126,7 @@ def ownership_build_node(ownership):
                             ),
                         },
                     },
-                    "object": ownership["parent"]["@id"],
+                    "object": ownership["bods_subject"]["@id"],
                 }
             ]
         ),
