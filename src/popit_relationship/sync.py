@@ -225,7 +225,9 @@ def relationship_build_node(relationship):
                 "subject": relationship["relationship_subject"]["@id"],
                 "predicate": {
                     "key": TYPE_RELATIONSHIP,
-                    "attributes": relationship_get_attributes(relationship),
+                    "attributes": predicate_attribute_filter_empty(
+                        relationship_get_attributes(relationship)
+                    ),
                 },
                 "object": relationship["relationship_object"]["@id"],
             }
