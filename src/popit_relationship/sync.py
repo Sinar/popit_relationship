@@ -117,14 +117,16 @@ def ownership_build_node(ownership):
                     "subject": get_in(["interestedParty", "@id"], ownership, None),
                     "predicate": {
                         "key": f"{SINAR_NS_MOCK}ownershipOrControlStatement",
-                        "attributes": {
-                            "interest_level": get_in(
-                                ["interest_level", "token"], ownership, None
-                            ),
-                            "interest_type": get_in(
-                                ["interest_type", "token"], ownership, None
-                            ),
-                        },
+                        "attributes": predicate_attribute_filter_empty(
+                            {
+                                "interest_level": get_in(
+                                    ["interest_level", "token"], ownership, None
+                                ),
+                                "interest_type": get_in(
+                                    ["interest_type", "token"], ownership, None
+                                ),
+                            }
+                        ),
                     },
                     "object": ownership["bods_subject"]["@id"],
                 }
@@ -223,7 +225,9 @@ def relationship_build_node(relationship):
                 "subject": relationship["relationship_subject"]["@id"],
                 "predicate": {
                     "key": TYPE_RELATIONSHIP,
-                    "attributes": relationship_get_attributes(relationship),
+                    "attributes": predicate_attribute_filter_empty(
+                        relationship_get_attributes(relationship)
+                    ),
                 },
                 "object": relationship["relationship_object"]["@id"],
             }
@@ -326,6 +330,10 @@ def node_is_class(node):
         TYPE_POST,
         TYPE_MEMBERSHIP,
     )
+
+
+def predicate_attribute_filter_empty(attributes):
+    return {key: value for (key, value) in attributes.items() if value}
 
 
 def relationship_filter_empty(result):
