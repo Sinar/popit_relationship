@@ -346,7 +346,15 @@ def relationship_filter_empty(result):
 
 def session_start_http():
     return aiohttp.ClientSession(
-        headers={"Accept": "application/json"}, json_serialize=ujson.dumps
+        headers={"Accept": "application/json"},
+        json_serialize=ujson.dumps,
+        auth=(
+            aiohttp.BasicAuth(
+                os.environ["API_AUTH_USER"], os.environ.get("API_AUTH_PASS", None)
+            )
+            if os.environ.get("API_AUTH_USER", False)
+            else None
+        ),
     )
 
 
