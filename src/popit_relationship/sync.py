@@ -28,7 +28,7 @@ def sync():
 @sync.command("all")
 @coro
 @click.pass_context
-async def all_sync(ctx):
+async def all_sync(_ctx):
     await tree_import(TYPE_PERSON, "Person", person_build_node)
     await tree_import(TYPE_RELATIONSHIP, "Relationship", relationship_build_node)
     await tree_import(TYPE_ORGANIZATION, "Organization", organization_build_node)
@@ -366,7 +366,15 @@ def relationship_filter_empty(result):
 
 def session_start_http():
     return aiohttp.ClientSession(
-        headers={"Accept": "application/json"}, json_serialize=ujson.dumps
+        headers={"Accept": "application/json"},
+        json_serialize=ujson.dumps,
+        auth=(
+            aiohttp.BasicAuth(
+                os.environ["API_AUTH_USER"], os.environ.get("API_AUTH_PASS", None)
+            )
+            if os.environ.get("API_AUTH_USER", False)
+            else None
+        ),
     )
 
 
