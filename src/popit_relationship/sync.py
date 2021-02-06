@@ -6,6 +6,7 @@ from urllib.parse import parse_qs, urlsplit
 import aiohttp
 import click
 import ujson
+from loguru import logger
 from toolz.dicttoolz import get_in, valfilter
 
 from popit_relationship.common import coro, graph_init, graph_prune, graph_save
@@ -322,6 +323,25 @@ async def fetch(portal_type, session_api, b_start=0, _result=None):
         )
 
 
+async def node_build(node_builder, portal_type, session):
+    result = []
+
+    for entity in await fetch(portal_type, session):
+        try:
+            result.append(node_builder(entity))
+
+        except (KeyError, TypeError) as error:
+            from pprint import pformat
+
+            logger.exception(error)
+            logger.error(
+                "The following entity does not have all required fileds:\n{}",
+                pformat(entity),
+            )
+
+    return result
+
+
 def node_is_class(node):
     return node in (
         TYPE_PERSON,
@@ -359,7 +379,7 @@ async def tree_build(portal_type, node_builder, session):
             else current["nodes"],
             relationships=current["relationships"] + incoming[1],
         ),
-        [node_builder(entity) for entity in await fetch(portal_type, session)],
+        await node_build(node_builder, portal_type, session),
         {"nodes": {}, "relationships": []},
     )
 
