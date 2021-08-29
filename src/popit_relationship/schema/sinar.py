@@ -30,3 +30,4 @@ class Sinar(Namespace):
     BASE = "https://sinarproject.org/ns/"
 
     OWNERSHIP = "ownership"
+    OCDS = "ocds"
