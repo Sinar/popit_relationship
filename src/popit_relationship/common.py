@@ -5,6 +5,8 @@ from functools import wraps
 import networkx as nx
 from networkx.exception import NetworkXError
 
+from popit_relationship.schema.base import Namespace, Schema
+
 CACHE_PATH_DEFAULT = "./primport-cache.gpickle"
 KEY_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
 KEY_RELATIONSHIP = "http://purl.org/vocab/relationship/Relationship"
@@ -51,3 +53,7 @@ def node_get_type(graph, node):
         return [j for i, j, k in graph.edges if i == node and k == KEY_TYPE][0]
     except IndexError:
         return False
+
+
+def schema_generate_uri(namespace: Namespace, schema: Schema):
+    return f"{namespace.__class__.BASE.value}{namespace.value}#{schema.value}"
