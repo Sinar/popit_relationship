@@ -1,18 +1,18 @@
 [tool.poetry]
 name = "popit_relationship"
-version = "0.1.2"
+version = "0.1.3"
 description = ""
 authors = ["Jeffrey04 <mycyberpet@yahoo.com>", "sweemeng <sweemeng@sinarproject.org>"]
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.9"
 click = "^7.1.2"
 python-dotenv = "^0.14.0"
 neo4j = "^4.0.1"
 aiohttp = {extras = ["speedups"], version = "^3.6.2"}
 ujson = "^3.0.0"
 toolz = "^0.10.0"
-networkx = "^2.4"
+networkx = "^3.2.1"
 matplotlib = "^3.3.0"
 loguru = "^0.5.3"
 

@@ -1,11 +1,13 @@
 import asyncio
 import os
+import pickle
 from functools import wraps
 
 import networkx as nx
 from networkx.exception import NetworkXError
 
 CACHE_PATH_DEFAULT = "./primport-cache.gpickle"
+GRAPHML_PATH_DEFAULT = "./primport-cache.graphml"
 KEY_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
 KEY_RELATIONSHIP = "http://purl.org/vocab/relationship/Relationship"
 
@@ -20,7 +22,8 @@ def coro(f):
 
 def graph_init():
     try:
-        return nx.read_gpickle(os.environ.get("CACHE_PATH", CACHE_PATH_DEFAULT))
+        with open(os.environ.get("CACHE_PATH", CACHE_PATH_DEFAULT), "rb") as cache_file:
+            return pickle.load(cache_file)
     except FileNotFoundError:
         graph = nx.MultiDiGraph()
         graph_save(graph)
@@ -43,7 +46,14 @@ def graph_prune(graph, node_type):
 
 
 def graph_save(graph):
-    return nx.write_gpickle(graph, os.environ.get("CACHE_PATH", CACHE_PATH_DEFAULT))
+    with open(os.environ.get("CACHE_PATH", CACHE_PATH_DEFAULT), "wb") as cache_file:
+        return pickle.dump(graph, cache_file)
+
+
+def graph_export_graphml(graph, path=None):
+    return nx.write_graphml(
+        graph, path or os.environ.get("GRAPHML_PATH", GRAPHML_PATH_DEFAULT)
+    )
 
 
 def node_get_type(graph, node):

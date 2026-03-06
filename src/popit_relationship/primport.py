@@ -1,4 +1,3 @@
-import asyncio
 from collections import defaultdict
 from functools import reduce
 
@@ -9,7 +8,7 @@ from dotenv import load_dotenv
 from toolz.dicttoolz import merge
 
 import popit_relationship.db as db
-from popit_relationship.common import graph_init, graph_save
+from popit_relationship.common import graph_export_graphml, graph_init, graph_save
 from popit_relationship.db import arrow_get_type
 from popit_relationship.sync import node_is_class, sync
 
@@ -118,6 +117,17 @@ def save():
 
 
 @click.group()
+def export():
+    pass
+
+
+@export.command("graphml")
+@click.argument("path", required=False)
+def export_graphml(path):
+    graph_export_graphml(graph_init(), path)
+
+
+@click.group()
 def app():
     pass
 
@@ -125,14 +135,13 @@ def app():
 app.add_command(reset)
 app.add_command(visualize)
 app.add_command(save)
+app.add_command(export)
 app.add_command(sync)
 
 
 def main():
     load_dotenv()
-
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(app())
+    app()
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ This script pulls data from politikus.sinarproject.org and cache it in networkx 
 
 The project depends on the following tools / python package in order to build and install properly.
 
-1. Python 3.6 and up
+1. Python 3.9 and up
 1. While the development work targets Neo4j 4.1, earlier version should work.
 1. Poetry - follow the installation instruction found [here](https://python-poetry.org/docs/#installation).
 1. Python wheel - you can install via pip
@@ -52,6 +52,7 @@ Most of the configuration is saved within `.env` file, please refer to the `.env
 - `ENDPOINT_API` stores the ENDPOINT API URI, currently defaulted to `https://politikus.sinarproject.org/@search`, the script should work with other similar APIs
 - `CRAWL_INTERVAL` stores the time to wait between every API call (defaulted to `1` second)
 - `CACHE_PATH` stores the path to the cache file (defaulted to `./primport-cache.gpickle`)
+- `GRAPHML_PATH` stores the path used by `primport export graphml` (defaulted to `./primport-cache.graphml`)
 
 The configuration environment variables can be overwritten while executing the script (please refer to the usage examples below).
 
@@ -86,6 +87,11 @@ NEO4J_AUTH=neo4j/someOtherPassword primport reset db
 ### Saving to the database
 
 - `primport save` saves the cached data to the Neo4j database to allow further work.
+
+### Exporting GraphML
+
+- `primport export graphml` writes the cached graph to `GRAPHML_PATH`
+- `primport export graphml ./primport-cache.graphml` writes the cached graph to the specified GraphML file using NetworkX's built-in GraphML exporter
 
 ### Usage without installing the wheel package
 
