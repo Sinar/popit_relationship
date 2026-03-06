@@ -9,15 +9,20 @@ import ujson
 from loguru import logger
 from toolz.dicttoolz import get_in, valfilter
 
-from popit_relationship.common import coro, graph_init, graph_prune, graph_save
+from popit_relationship.common import (
+    coro,
+    graph_init,
+    graph_prune,
+    graph_save,
+    schema_generate_uri,
+)
+from popit_relationship.schema.sinar import Ownership, Sinar
 
 TYPE_PERSON = "https://www.w3.org/ns/person#Person"
 TYPE_POST = "http://www.w3.org/ns/org#Post"
 TYPE_ORGANIZATION = "http://www.w3.org/ns/org#Organization"
 TYPE_MEMBERSHIP = "http://www.w3.org/ns/org#Membership"
 TYPE_RELATIONSHIP = "http://purl.org/vocab/relationship/Relationship"
-
-SINAR_NS_MOCK = "https://sinarproject.org/ns/ownership#"
 
 
 @click.group()
@@ -35,7 +40,7 @@ async def all_sync(_ctx):
     await tree_import(TYPE_POST, "Post", post_build_node)
     await tree_import(TYPE_MEMBERSHIP, "Membership", membership_build_node)
     await tree_import(
-        f"{SINAR_NS_MOCK}ownershipOrControlStatement",
+        schema_generate_uri(Sinar.OWNERSHIP, Ownership.OWNERSHIP_OR_CONTROL_STATEMENT),
         "Ownership Control Statement",
         ownership_build_node,
     )
@@ -103,7 +108,7 @@ def membership_build_node(membership):
 @coro
 async def ownership():
     await tree_import(
-        f"{SINAR_NS_MOCK}ownershipOrControlStatement",
+        schema_generate_uri(Sinar.OWNERSHIP, Ownership.OWNERSHIP_OR_CONTROL_STATEMENT),
         "Ownership Control Statement",
         ownership_build_node,
     )
@@ -117,7 +122,9 @@ def ownership_build_node(ownership):
                 {
                     "subject": get_in(["interestedParty", "@id"], ownership, None),
                     "predicate": {
-                        "key": f"{SINAR_NS_MOCK}ownershipOrControlStatement",
+                        "key": schema_generate_uri(
+                            Sinar.OWNERSHIP, Ownership.OWNERSHIP_OR_CONTROL_STATEMENT
+                        ),
                         "attributes": predicate_attribute_filter_empty(
                             {
                                 "interest_level": get_in(
